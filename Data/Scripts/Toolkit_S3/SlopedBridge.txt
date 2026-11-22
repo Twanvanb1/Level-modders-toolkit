@@ -300,3 +300,107 @@ event ObjectStartup
 		object[arrayPos0].playerID = -1
 	next
 end event
+
+// ========================
+// Editor Events
+// ========================
+
+event RSDKEdit
+	if editor.returnVariable == true
+		switch editor.variableID
+		case EDIT_VAR_PROPVAL // property value
+			checkResult = object.propertyValue
+			break
+
+		case 0 // length
+			checkResult = object.propertyValue
+			checkResult &= 0x1F
+			break
+
+		case 1 // slope
+			checkResult = object.propertyValue
+			checkResult >>= 5
+			break
+
+		end switch
+	else
+		switch editor.variableID
+		case EDIT_VAR_PROPVAL // property value
+			object.propertyValue = editor.variableValue
+			break
+
+		case 0 // flipFlags
+			temp0 = editor.variableValue
+			temp0 &= 0x1F
+
+			temp1 = 31
+			Not(temp1)
+
+			object.propertyValue &= temp1
+			object.propertyValue |= temp0
+			break
+
+		case 1 // slope
+			temp0 = editor.variableValue
+			temp0 &= 0x1F
+			temp0 <<= 5
+
+			temp1 = 31
+			temp1 <<= 5
+			Not(temp1)
+
+			object.propertyValue &= temp1
+			object.propertyValue |= temp0
+			break
+
+		end switch
+	end if
+end event
+
+event RSDKDraw
+	object.length = object.propertyValue
+	object.length &= 0x1F
+
+	object.slope = object.propertyValue
+	object.slope &= 0xE0
+	object.slope >>= 5
+	if object.direction == FLIP_X
+		FlipSign(object.slope)
+	end if
+
+	temp0 = object.length
+	temp2 = temp0
+	temp0 <<= 19
+	FlipSign(temp0)
+	temp0 += object.xpos
+	temp0 += 0x80000
+	temp1 = 0
+	while temp1 < temp2
+
+		temp6 = temp1
+		temp6 *= object.slope
+		temp6 <<= 16
+		temp3 = object.ypos
+		temp3 += temp6
+
+		DrawSpriteXY(0, temp0, temp3)
+		temp0 += 0x100000
+		temp1++
+	loop
+
+	if temp1 == 0
+		DrawSprite(0)
+	end if
+end event
+
+
+event RSDKLoad
+	LoadSpriteSheet("Toolkit/Objects.gif")
+	SpriteFrame(-8, -8, 16, 16, 99, 92)
+
+	AddEditorVariable("length")
+	SetActiveVariable("length")
+
+	AddEditorVariable("slope")
+	SetActiveVariable("slope")
+end event
